@@ -10,23 +10,28 @@ dual_extruder = true;
 
 with_vertical_carriage_holes = true;
 sep_mount=30; //vertical_carriage screw space (24 or 30)
-with_mountplate_holes = false;
+with_mountplate_holes = false; //set this to true for CatNozzle
 
 //printed rods for the 608zz bearings?
 PR608=false;
 
+//filament width
+filw=3.5; //it was 5.2??
+m4_nut_height=2;
+m4_nut_diameter=8.3;
+
 // supported hotends: jhead, catnozzle double is work in progress...
 // comment the line to disable
 with_hotend_mount = "jhead";
-//with_hotend_mount = "CatNozzleDouble";
+//with_hotend_mount = "CatNozzle"; //for CatNozzle (Dual or single) you only need "with_mount_plate=true"
 
 // supported motors: PG35L, 42BYG48HJ50
 with_motor = "42BYG48HJ50";
 
-if(dual_extruder && with_mountplate_holes) {
-	echo("can't use dual extruder with mountplate!");
-}
-else {
+//if(!dual_extruder && with_mountplate_holes) {
+//	echo("can't use dual extruder with mountplate!");
+//}
+//else {
 extruder(vertical_carriage=with_vertical_carriage_holes, mounting_holes=with_mountplate_holes, hotend=with_hotend_mount);
 
 if(with_motor == "PG35L") {
@@ -41,7 +46,7 @@ if(with_motor == "PG35L") {
 if(PR608)
 	for(i=[1,2,3])
 		translate([0,i*12-6,0]) cylinder(r=8/2,h=14);
-}
+//}
 
 ///-
 
@@ -217,7 +222,7 @@ module extruder_42BYG48HJ50_holes() {
  translate([5.5,-5,6]) cube([10,10,20]);
 
  // Filament path
- translate([1.5+11+3.5+2+2,65+4,11]) rotate([90,0,0]) cylinder(r=5.2/2, h=70);
+ translate([1.5+11+3.5+2+2,65+4,11]) rotate([90,0,0]) cylinder(r=filw/2, h=70);
  // Hole for drive gear check
  translate([1.5+11+3.5-30+2,25-3+4,11]) rotate([90,0,90]) cylinder(r=4, h=70, $fn=20);
 
@@ -299,7 +304,7 @@ module extruder_PG35L_holes() {
  translate([5.5+5.8,-5,6]) cube([10,10,20]);
 
  // Filament path
- translate([25,65+4,11+1.5]) rotate([90,0,0]) cylinder(r=5.2/2, h=70);
+ translate([25,65+4,11+1.5]) rotate([90,0,0]) cylinder(r=filw/2, h=70);
  // Hole for drive gear check
  *translate([1.5+11+3.5-30+2,25-3+4,11]) rotate([90,0,90]) cylinder(r=4, h=70, $fn=20);
 
@@ -309,7 +314,15 @@ module extruder_PG35L_holes() {
 module extruder_mount(vertical_carriage=false, mounting_holes=true) {
  // Extruder plate mount
  if(mounting_holes) {
-     translate([-16+2,49+4,0]) cube([65,5,24]);
+   if(dual_extruder){
+     translate([-16+2-(with_motor == "PG35L"?44:38),49+4,0]) cube([65+(with_motor == "PG35L"?51:39),5,24]);
+   } else {
+	if(with_motor == "PG35L"){
+		translate([-16+2+5,49+4,0]) cube([68,5,24]);
+	} else {
+		translate([-16+2,49+4,0]) cube([65,5,24]);
+	}
+   }
  } else {
    //translate([14+2,49+4,0]) cube([10,5,24]);
  }
@@ -321,33 +334,49 @@ module extruder_mount(vertical_carriage=false, mounting_holes=true) {
 
 module carriage_mount_cylinders() {
  if(with_motor == "PG35L") {
-  translate([11+2+(dual_extruder ? 0 : 5),25+4,0])
+  translate([11+2+(dual_extruder ? 0 : 5+3),25+4,0])
     //hull() for(t=dual_extruder?[16+5,-42-5]:[16,-8])
 	hull() for(t=dual_extruder?[16+5,-42-5]:[sep_mount/3*2,-sep_mount/3-2])
       translate([t,24,0]) cylinder(r=5, h=24);
  } else {
   translate([11+2,25+4,0])
-    hull() for(t=dual_extruder?[16,-42]:[sep_mount/3*2,-sep_mount/3-2])
+    hull() for(t=dual_extruder?[16,-42]:[sep_mount/3*2+3,-sep_mount/3-2+3])
       translate([t,24,0]) cylinder(r=5, h=24);
  }
 }
 
 module extruder_mount_holes(vertical_carriage=false, mounting_holes=true) {
- translate([dual_extruder?0:11+4+2+(with_motor == "PG35L" ? 5 : 0),25+4,0]){
+ translate([dual_extruder?0:11+4+2+(with_motor == "PG35L"?5:0),25+4,0]){
  if(vertical_carriage) {
   for(i=[-1,1]){
   // Carriage mount right and left screw head holes
-  translate([i*sep_mount/2,24,-3]) cylinder(r=3.5, h=23-(sep_mount==24?0:13));
+  translate([i*sep_mount/2+(dual_extruder?0:3),24,-3]) cylinder(r=3.5, h=23-(sep_mount==24?0:13));
   // Carriage mount left and right screw holes
-  translate([i*sep_mount/2,24,20.5-(sep_mount==24?0:13)]) cylinder(r=2, h=23);
+  translate([i*sep_mount/2+(dual_extruder?0:3),24,20.5-(sep_mount==24?0:13)]) cylinder(r=2, h=23);
  }
  }
  }
  if(mounting_holes) {
+//   %translate([1.5+11+3.5++25+2+2,69,11]) rotate([90,0,0]) cylinder(r=4.3/2, h=50);
+//   // Left extruder plate mounting hole
+//   #translate([1.5+11+3.5+25+2,65+4,11]) rotate([90,0,0]) cylinder(r=4.3/2, h=20);
+//   // Right extruder plate mounting hole
+//   %translate([1.5+11+3.5-25+2+2,65+4,11]) rotate([90,0,0]) cylinder(r=4.3/2, h=20);
+   translate([dual_extruder||(with_motor == "PG35L")?0:-5,69,11+(with_motor == "PG35L"?1.7:0)]) 
+    rotate([90,0,0]) cylinder(r=4.3/2, h=20);
+	translate([dual_extruder||(with_motor == "PG35L")?0:-5,69-16+m4_nut_height,11+(with_motor == "PG35L"?1.7:0)]) 
+	 rotate([90,0,0]) cylinder(r=m4_nut_diameter/2, h=10,$fn=6);
    // Left extruder plate mounting hole
-   translate([1.5+11+3.5+25+2,65+4,11]) rotate([90,0,0]) cylinder(r=4.3/2, h=20);
+   translate([25+(with_motor == "PG35L"?25:20),69,11+(with_motor == "PG35L"?1.7:0)]) 
+    rotate([90,0,0]) cylinder(r=4.3/2, h=20);
+	translate([25+(with_motor == "PG35L"?25:20),69-16+m4_nut_height,11+(with_motor == "PG35L"?1.7:0)]) 
+	 rotate([90,0,0]) cylinder(r=m4_nut_diameter/2, h=10,$fn=6);
    // Right extruder plate mounting hole
-   translate([1.5+11+3.5-25+2,65+4,11]) rotate([90,0,0]) cylinder(r=4.3/2, h=20);
+   translate([-25-(with_motor == "PG35L"?25:20),69,11+(with_motor == "PG35L"?1.7:0)]) 
+    rotate([90,0,0]) cylinder(r=4.3/2, h=20);
+	translate([-25-(with_motor == "PG35L"?25:20),69-16+m4_nut_height,11+(with_motor == "PG35L"?1.7:0)]) 
+	 rotate([90,0,0]) cylinder(r=m4_nut_diameter/2, h=20,$fn=6);
+
   }
 }
 
